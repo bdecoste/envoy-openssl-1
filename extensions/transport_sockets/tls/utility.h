@@ -5,6 +5,9 @@
 
 #include "common/common/utility.h"
 
+#include "extensions/transport_sockets/tls/openssl_impl.h"
+
+#include "boringssl_compat/bssl.h"
 #include "openssl/ssl.h"
 
 namespace Envoy {
@@ -28,6 +31,7 @@ std::string getSerialNumberFromCertificate(X509& cert);
  * @return std::vector returns the list of subject alternate names.
  */
 std::vector<std::string> getSubjectAltNames(X509& cert, int type);
+
 
 /**
  * Retrieves the issuer from certificate.

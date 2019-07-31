@@ -24,13 +24,21 @@ local_repository(
     },
 )
 
+load("@envoy//bazel:api_binding.bzl", "envoy_api_binding")
+
+envoy_api_binding()
+
 load("@envoy//bazel:api_repositories.bzl", "envoy_api_dependencies")
+
 envoy_api_dependencies()
 
 load("@envoy//bazel:repositories.bzl", "envoy_dependencies")
-load("@envoy//bazel:cc_configure.bzl", "cc_configure")
 
 envoy_dependencies()
+
+load("@envoy//bazel:dependency_imports.bzl", "envoy_dependency_imports")
+
+envoy_dependency_imports()
 
 load("@envoy//bazel:repository_locations.bzl", "REPOSITORY_LOCATIONS")
 
@@ -48,12 +56,7 @@ bind(
     actual = "@com_github_google_jwt_verify_patched//:jwt_verify_lib",
 )
 
-load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
-
-rules_foreign_cc_dependencies()
-
-cc_configure()
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
-go_rules_dependencies()
-go_register_toolchains()
+bind(
+    name = "crypto_utility_lib",
+    actual = "//extensions/common/crypto:utility_lib",
+)

@@ -5,16 +5,17 @@
 #include <string>
 #include <vector>
 
-#include "envoy/ssl/context.h"
-#include "envoy/ssl/context_config.h"
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
+#include "envoy/ssl/context.h"
+#include "envoy/ssl/context_config.h"
 
-#include "boringssl_compat/bssl.h"
-#include "context_manager_impl.h"
+#include "extensions/transport_sockets/tls/context_manager_impl.h"
+#include "extensions/transport_sockets/tls/openssl_impl.h"
 
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
+#include "boringssl_compat/bssl.h"
 #include "openssl/ssl.h"
 
 namespace Envoy {
@@ -74,7 +75,7 @@ public:
 
   SslStats& stats() { return stats_; }
 
-  // Ssl::Context
+  // Envoy::Ssl::Context
   size_t daysUntilFirstCertExpires() const override;
   Envoy::Ssl::CertificateDetailsPtr getCaCertInformation() const override;
   std::vector<Envoy::Ssl::CertificateDetailsPtr> getCertChainInformation() const override;
@@ -139,7 +140,7 @@ protected:
     std::string getCertChainFileName() const { return cert_chain_file_path_; };
     void addClientValidationContext(const Envoy::Ssl::CertificateValidationContextConfig& config,
                                     bool require_client_cert);
-    bool isCipherEnabled(uint16_t cipher_id, uint16_t client_version);
+    // bool isCipherEnabled(uint16_t cipher_id, uint16_t client_version);
   };
 
   // This is always non-empty, with the first context used for all new SSL
@@ -173,7 +174,6 @@ public:
 
 private:
   int newSessionKey(SSL_SESSION* session);
-  uint16_t parseSigningAlgorithmsForTest(const std::string& sigalgs);
 
   const std::string server_name_indication_;
   const bool allow_renegotiation_;
@@ -193,6 +193,10 @@ private:
                          unsigned int inlen);
   int sessionTicketProcess(SSL* ssl, uint8_t* key_name, uint8_t* iv, EVP_CIPHER_CTX* ctx,
                            HMAC_CTX* hmac_ctx, int encrypt);
+
+  // bool isClientEcdsaCapable(SSL *ssl);
+  // int cert_cb(SSL* ssl, void *param);
+
   void generateHashForSessionContexId(const std::vector<std::string>& server_names,
                                       uint8_t* session_context_buf, unsigned& session_context_len);
 

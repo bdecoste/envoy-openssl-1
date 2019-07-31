@@ -8,6 +8,12 @@
 
 #include <memory>
 
+#define sk_X509_NAME_find(a,b,c) sk_X509_NAME_find((a), (c))
+
+// SSL_TICKET_KEY_NAME_LEN is the length of the key name prefix of a session
+// ticket.
+#define SSL_TICKET_KEY_NAME_LEN 16
+
 namespace bssl {
 
 namespace internal {

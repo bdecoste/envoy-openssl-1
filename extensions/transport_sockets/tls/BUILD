@@ -1,6 +1,6 @@
 licenses(["notice"])  # Apache 2
 
-# Optional TLS connection transport socket based on OpenSSL.
+# Built-in TLS connection transport socket.
 
 load(
     "@envoy//bazel:envoy_build_system.bzl",
@@ -30,7 +30,6 @@ envoy_cc_library(
     srcs = ["ssl_socket.cc"],
     hdrs = ["ssl_socket.h"],
     external_deps = [
-        "abseil_optional",
         "abseil_synchronization",
         "ssl",
     ],
@@ -46,6 +45,7 @@ envoy_cc_library(
         "@envoy//source/common/common:minimal_logger_lib",
         "@envoy//source/common/common:thread_annotations",
         "@envoy//source/common/http:headers_lib",
+        "//boringssl_compat:bssl_compat_lib",
     ],
 )
 
@@ -65,7 +65,6 @@ envoy_cc_library(
         "@envoy//source/common/common:assert_lib",
         "@envoy//source/common/common:empty_string",
         "@envoy//source/common/config:datasource_lib",
-        "@envoy//source/common/config:tls_context_json_lib",
         "@envoy//source/common/json:json_loader_lib",
         "@envoy//source/common/protobuf:utility_lib",
         "@envoy//source/common/secret:sds_api_lib",
@@ -92,18 +91,18 @@ envoy_cc_library(
     ],
     deps = [
         ":utility_lib",
+        "@envoy//include/envoy/stats:stats_interface",
+        "@envoy//include/envoy/stats:stats_macros",
         "@envoy//include/envoy/ssl:context_config_interface",
         "@envoy//include/envoy/ssl:context_interface",
         "@envoy//include/envoy/ssl:context_manager_interface",
-        "@envoy//include/envoy/stats:stats_interface",
-        "@envoy//include/envoy/stats:stats_macros",
         "@envoy//source/common/common:assert_lib",
         "@envoy//source/common/common:base64_lib",
         "@envoy//source/common/common:hex_lib",
         "@envoy//source/common/common:utility_lib",
         "@envoy//source/common/protobuf:utility_lib",
-        "//boringssl_compat:bssl_compat_lib",
         "@envoy_api//envoy/admin/v2alpha:certs_cc",
+        "//boringssl_compat:bssl_compat_lib",
     ],
 )
 
@@ -116,8 +115,26 @@ envoy_cc_library(
         "ssl",
     ],
     deps = [
+        ":openssl_impl_lib",
         "@envoy//source/common/common:assert_lib",
         "@envoy//source/common/common:utility_lib",
         "//boringssl_compat:bssl_compat_lib",
     ],
+)
+
+envoy_cc_library(
+    name = "openssl_impl_lib",
+    repository = "@envoy",
+    srcs = [
+        "openssl_impl.cc",
+    ],
+    hdrs = [
+        "openssl_impl.h",
+    ],
+    external_deps = [
+        "ssl",
+    ],
+    deps = [
+        "//boringssl_compat:bssl_compat_lib",
+    ]
 )

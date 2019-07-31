@@ -1,4 +1,4 @@
-#include "context_config_impl.h"
+#include "extensions/transport_sockets/tls/context_config_impl.h"
 
 #include <memory>
 #include <string>
@@ -6,7 +6,6 @@
 #include "common/common/assert.h"
 #include "common/common/empty_string.h"
 #include "common/config/datasource.h"
-#include "common/config/tls_context_json.h"
 #include "common/protobuf/utility.h"
 #include "common/secret/sds_api.h"
 #include "common/ssl/certificate_validation_context_config_impl.h"
@@ -151,12 +150,14 @@ ContextConfigImpl::ContextConfigImpl(
   // Load inline or static secret into validation_context_config_.
   if (certificate_validation_context_provider_ != nullptr &&
       certificate_validation_context_provider_->secret() != nullptr) {
-    validation_context_config_ = std::make_unique<Ssl::CertificateValidationContextConfigImpl>(
-        *certificate_validation_context_provider_->secret(), api_);
+    validation_context_config_ =
+        std::make_unique<Envoy::Ssl::CertificateValidationContextConfigImpl>(
+            *certificate_validation_context_provider_->secret(), api_);
   }
 }
 
-Ssl::CertificateValidationContextConfigPtr ContextConfigImpl::getCombinedValidationContextConfig(
+Envoy::Ssl::CertificateValidationContextConfigPtr
+ContextConfigImpl::getCombinedValidationContextConfig(
     const envoy::api::v2::auth::CertificateValidationContext& dynamic_cvc) {
   envoy::api::v2::auth::CertificateValidationContext combined_cvc = *default_cvc_;
   combined_cvc.MergeFrom(dynamic_cvc);
@@ -200,7 +201,7 @@ void ContextConfigImpl::setSecretUpdateCallback(std::function<void()> callback) 
       cvc_update_callback_handle_ =
           certificate_validation_context_provider_->addUpdateCallback([this, callback]() {
             validation_context_config_ =
-                std::make_unique<Ssl::CertificateValidationContextConfigImpl>(
+                std::make_unique<Envoy::Ssl::CertificateValidationContextConfigImpl>(
                     *certificate_validation_context_provider_->secret(), api_);
             callback();
           });
@@ -244,13 +245,8 @@ const unsigned ClientContextConfigImpl::DEFAULT_MIN_VERSION = TLS1_VERSION;
 const unsigned ClientContextConfigImpl::DEFAULT_MAX_VERSION = TLS1_2_VERSION;
 
 const std::string ClientContextConfigImpl::DEFAULT_CIPHER_SUITES =
-#ifndef BORINGSSL_FIPS
     "[ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]:"
     "[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]:"
-#else // BoringSSL FIPS
-    "ECDHE-ECDSA-AES128-GCM-SHA256:"
-    "ECDHE-RSA-AES128-GCM-SHA256:"
-#endif
     "ECDHE-ECDSA-AES128-SHA:"
     "ECDHE-RSA-AES128-SHA:"
     "AES128-GCM-SHA256:"
@@ -262,11 +258,9 @@ const std::string ClientContextConfigImpl::DEFAULT_CIPHER_SUITES =
     "AES256-GCM-SHA384:"
     "AES256-SHA";
 
-const std::string ClientContextConfigImpl::DEFAULT_CURVES =
-#ifndef BORINGSSL_FIPS
-    "X25519:"
-#endif
-    "P-256";
+const std::string ClientContextConfigImpl::DEFAULT_CURVES = "X25519:"
+                                                            "P-256";
+
 
 ClientContextConfigImpl::ClientContextConfigImpl(
     const envoy::api::v2::auth::UpstreamTlsContext& config, absl::string_view sigalgs,
@@ -288,33 +282,12 @@ ClientContextConfigImpl::ClientContextConfigImpl(
   }
 }
 
-ClientContextConfigImpl::ClientContextConfigImpl(
-    const Json::Object& config,
-    Server::Configuration::TransportSocketFactoryContext& factory_context)
-    : ClientContextConfigImpl(
-          [&config] {
-            envoy::api::v2::auth::UpstreamTlsContext upstream_tls_context;
-            Config::TlsContextJson::translateUpstreamTlsContext(config, upstream_tls_context);
-            return upstream_tls_context;
-          }(),
-          factory_context) {}
-
 const unsigned ServerContextConfigImpl::DEFAULT_MIN_VERSION = TLS1_VERSION;
-const unsigned ServerContextConfigImpl::DEFAULT_MAX_VERSION =
-#ifndef BORINGSSL_FIPS
-    TLS1_3_VERSION;
-#else // BoringSSL FIPS
-    TLS1_2_VERSION;
-#endif
+const unsigned ServerContextConfigImpl::DEFAULT_MAX_VERSION = TLS1_3_VERSION;
 
 const std::string ServerContextConfigImpl::DEFAULT_CIPHER_SUITES =
-#ifndef BORINGSSL_FIPS
     "[ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]:"
     "[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]:"
-#else // BoringSSL FIPS
-    "ECDHE-ECDSA-AES128-GCM-SHA256:"
-    "ECDHE-RSA-AES128-GCM-SHA256:"
-#endif
     "ECDHE-ECDSA-AES128-SHA:"
     "ECDHE-RSA-AES128-SHA:"
     "AES128-GCM-SHA256:"
@@ -326,11 +299,8 @@ const std::string ServerContextConfigImpl::DEFAULT_CIPHER_SUITES =
     "AES256-GCM-SHA384:"
     "AES256-SHA";
 
-const std::string ServerContextConfigImpl::DEFAULT_CURVES =
-#ifndef BORINGSSL_FIPS
-    "X25519:"
-#endif
-    "P-256";
+const std::string ServerContextConfigImpl::DEFAULT_CURVES = "X25519:"
+                                                            "P-256";
 
 ServerContextConfigImpl::ServerContextConfigImpl(
     const envoy::api::v2::auth::DownstreamTlsContext& config,
@@ -368,17 +338,6 @@ ServerContextConfigImpl::ServerContextConfigImpl(
     throw EnvoyException("SDS and non-SDS TLS certificates may not be mixed in server contexts");
   }
 }
-
-ServerContextConfigImpl::ServerContextConfigImpl(
-    const Json::Object& config,
-    Server::Configuration::TransportSocketFactoryContext& factory_context)
-    : ServerContextConfigImpl(
-          [&config] {
-            envoy::api::v2::auth::DownstreamTlsContext downstream_tls_context;
-            Config::TlsContextJson::translateDownstreamTlsContext(config, downstream_tls_context);
-            return downstream_tls_context;
-          }(),
-          factory_context) {}
 
 // Append a SessionTicketKey to keys, initializing it with key_data.
 // Throws if key_data is invalid.

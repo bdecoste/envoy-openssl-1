@@ -1,4 +1,4 @@
-#include "config.h"
+#include "extensions/transport_sockets/tls/config.h"
 
 #include "envoy/api/v2/auth/cert.pb.h"
 #include "envoy/api/v2/auth/cert.pb.validate.h"
@@ -6,8 +6,8 @@
 
 #include "common/protobuf/utility.h"
 
-#include "context_config_impl.h"
-#include "ssl_socket.h"
+#include "extensions/transport_sockets/tls/context_config_impl.h"
+#include "extensions/transport_sockets/tls/ssl_socket.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -47,12 +47,6 @@ ProtobufTypes::MessagePtr DownstreamSslSocketFactory::createEmptyConfigProto() {
 
 REGISTER_FACTORY(DownstreamSslSocketFactory,
                  Server::Configuration::DownstreamTransportSocketConfigFactory);
-
-Ssl::ContextManagerPtr SslContextManagerFactory::createContextManager(TimeSource& time_source) {
-  return std::make_unique<ContextManagerImpl>(time_source);
-}
-
-REGISTER_FACTORY(SslContextManagerFactory, Ssl::ContextManagerFactory);
 
 } // namespace Tls
 } // namespace TransportSockets
